@@ -29,6 +29,17 @@ jobs:
 
     - name: Build with Buildozer
       run: |
+        # Explicitly enforce static metrics into the target buildozer.spec before compilation
+        sed -i 's/^#\? \?android.api =.*/android.api = 34/' vault/buildozer.spec
+        sed -i 's/^#\? \?android.minapi =.*/android.minapi = 21/' vault/buildozer.spec
+        sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' vault/buildozer.spec
+        sed -i 's/^#\? \?android.archs =.*/android.archs = arm64-v8a, armeabi-v7a/' vault/buildozer.spec
+        
+        # Verify that package identity attributes are clearly defined to avoid extraction errors
+        grep -E "^(title|package.name|version) =" vault/buildozer.spec || echo "[!] Check identity metadata fields"
+        
+        # Shift runtime execution context directly into the folder housing the source spec
+        cd vault/
         yes | buildozer android debug
       env:
         BUILDOZER_WARN_ON_ROOT: 0
@@ -37,5 +48,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: android-debug-apk
-        path: bin/*.apk
+        path: vault/bin/*.apk
 
