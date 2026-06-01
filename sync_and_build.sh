@@ -18,13 +18,14 @@ echo "[*] Guarding directory structure..."
 mkdir -p .github/workflows
 
 echo "[*] Staging verified artifacts from vault, script, and workflows..."
-# Dynamically add all essential node files to the git tracking index
+# Dynamically add all essential node files, root specs, and configurations
 git add sync_and_build.sh
+git add buildozer.spec
 git add vault/
 git add .github/
 
 echo "[*] Committing node configuration state..."
-git commit -m "feat(web3): integrate WSS fallback logic and deploy custom Ubuntu workflow runner"
+git commit -m "feat(web3): track root build specifications and optimize workflow pipeline"
 
 echo "[*] Setting remote destination tracking..."
 # Clean and override the remote origin address
