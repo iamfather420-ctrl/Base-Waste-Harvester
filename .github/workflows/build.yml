@@ -29,16 +29,16 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # Explicitly enforce static metrics into the target buildozer.spec before compilation
+        # Explicitly enforce static metrics into the target vault spec before compilation
         sed -i 's/^#\? \?android.api =.*/android.api = 34/' vault/buildozer.spec
         sed -i 's/^#\? \?android.minapi =.*/android.minapi = 21/' vault/buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' vault/buildozer.spec
         sed -i 's/^#\? \?android.archs =.*/android.archs = arm64-v8a, armeabi-v7a/' vault/buildozer.spec
         
-        # Verify that package identity attributes are clearly defined to avoid extraction errors
-        grep -E "^(title|package.name|version) =" vault/buildozer.spec || echo "[!] Check identity metadata fields"
+        # Verify that package identity attributes are explicitly defined to prevent Abandon errors
+        grep -E "^(title|package.name|version) =" vault/buildozer.spec || echo "[!] Check identity fields"
         
-        # Shift runtime execution context directly into the folder housing the source spec
+        # Shift execution context directly into the folder housing your code and spec file
         cd vault/
         yes | buildozer android debug
       env:
