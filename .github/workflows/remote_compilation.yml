@@ -1,4 +1,4 @@
-name: Project AGATE Remote Compilation
+name: Remote Compilation Pipeline
 
 on:
   push:
@@ -6,18 +6,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  buildozer-android:
-    runs-on: ubuntu-22.04
+  build-android-apk:
+    runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Base Waste Harvester
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Initialize Ubuntu Architecture & Dependencies
+      - name: Provision Core Ubuntu Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libltdl-dev libffi-dev libssl-dev python3-dev zlib1g-dev openjdk-17-jdk
+          sudo apt-get install -y build-essential libltdl-dev libffi-dev libssl-dev python3-dev zip unzip zlib1g-dev openjdk-17-jdk
 
-      - name: Provision Python Build Environments
+      - name: Provision Python Build Architecture
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -27,9 +28,9 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython virtualenv
 
-      - name: Execute Build Compilation (License Auto-Accept)
+      - name: Execute Android Compilation
         run: |
-          cd vault
+          cd vault/
           yes | buildozer -v android debug
 
       - name: Secure Final APK Artifact
