@@ -1,35 +1,22 @@
 [app]
-
-# (str) Title of your application
-title = Agate Node
-
-# (str) Package name
-package.name = agatenode
-
-# (str) Package domain (needed for android package identifier)
+title = Base Waste Harvester
+package.name = basewasteharvester
 package.domain = org.agate
-
-# (str) Source code directory (tells buildozer to compile the files right here)
 source.dir = .
-
-# (list) Source files to include (letting it read python files and assets)
-source.include_exts = py,png,jpg,kv,json,txt
-
-# (str) Application version
-version = 1.0.0
-
-# (list) Application requirements
-# Add any extra pip packages your code needs here (separated by commas)
+source.include_exts = py,png,jpg,kv,atlas
+version = 0.1
 requirements = python3,kivy
-
-# (int) Orientation (1 = portrait, 2 = landscape, 3 = all)
+presplash.filename = %(source.dir)s/data/presplash.png
+icon.filename = %(source.dir)s/data/icon.png
 orientation = portrait
+fullscreen = 0
+android.api = 34
+android.minapi = 21
+android.ndk = 25b
+android.skip_update = False
+android.accept_sdk_license = True
 
-# (bool) Indicate if the application should be fullscreen or not
-fullscreen = 1
-
-# ===============================================================
-# NOTE: The rest of your Android API, NDK, and Architecture keys 
-# are automatically handled and inserted by your custom GitHub action!
-# ===============================================================
+[buildozer]
+log_level = 2
+warn_on_root = 1
 
