@@ -29,20 +29,21 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # Explicitly enforce static metrics into the target vault spec before compilation
+        # Clear out any stale toolchain configurations from previous runs
+        rm -rf ~/.buildozer/android/platform/
+
+        # Hard-force the exact target constraints into the spec file
         sed -i 's/^#\? \?android.api =.*/android.api = 34/' vault/buildozer.spec
         sed -i 's/^#\? \?android.minapi =.*/android.minapi = 21/' vault/buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' vault/buildozer.spec
         sed -i 's/^#\? \?android.archs =.*/android.archs = arm64-v8a, armeabi-v7a/' vault/buildozer.spec
         
-        # Verify that package identity attributes are explicitly defined to prevent Abandon errors
-        grep -E "^(title|package.name|version) =" vault/buildozer.spec || echo "[!] Check identity fields"
-        
-        # Shift execution context directly into the folder housing your code and spec file
+        # Shift execution directly into the vault context and build
         cd vault/
         yes | buildozer android debug
       env:
         BUILDOZER_WARN_ON_ROOT: 0
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
