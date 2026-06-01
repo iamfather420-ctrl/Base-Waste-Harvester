@@ -29,16 +29,21 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # Clear out any stale toolchain configurations from previous runs
+        # Clear local workspace cache anomalies
         rm -rf ~/.buildozer/android/platform/
 
-        # Hard-force the exact target constraints into the spec file
+        # Clean project target variables directly in the spec
         sed -i 's/^#\? \?android.api =.*/android.api = 34/' vault/buildozer.spec
         sed -i 's/^#\? \?android.minapi =.*/android.minapi = 21/' vault/buildozer.spec
         sed -i 's/^#\? \?android.ndk =.*/android.ndk = 25b/' vault/buildozer.spec
         sed -i 's/^#\? \?android.archs =.*/android.archs = arm64-v8a, armeabi-v7a/' vault/buildozer.spec
         
-        # Shift execution directly into the vault context and build
+        # Strip out Github's global environment overrides for the NDK
+        unset ANDROID_NDK
+        unset ANDROID_NDK_HOME
+        unset ANDROID_NDK_LATEST_HOME
+
+        # Jump context into the target directory and execute
         cd vault/
         yes | buildozer android debug
       env:
