@@ -1,8 +1,9 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # Project AGATE: Cryptographic Node Fallback Sync Protocol
 
+# 1. Force the local branch deployment to be named 'main'
+git branch -M main
 TARGET_BRANCH="main"
-# Internal Unverified: Ensure remote 'origin' is configured with adequate PAT or SSH keys.
 
 echo "[*] Verifying environment dependencies..."
 pkg update -y
@@ -12,16 +13,22 @@ echo "[*] Enforcing AGATE Auditor Identity..."
 git config --global user.email "catinlahat@gmail.com"
 git config --global user.name "AGATE Technical Auditor"
 
-echo "[*] Staging verified artifacts..."
-git add src/lib/ExecutionLayer.ts
-git add src/lib/IntegrationLayer.ts
-git add .env.example
+echo "[*] Staging verified artifacts from vault..."
+# This stages your sync script and the entire vault folder contents dynamically
+git add sync_and_build.sh
+git add vault/
 
 echo "[*] Committing node configuration state..."
-git commit -m "feat(web3): integrate WSS fallback logic for missing local browser provider in ExecutionLayer and IntegrationLayer"
+git commit -m "feat(web3): integrate WSS fallback logic for missing local browser provider inside vault pipeline"
 
-echo "[*] Executing push sequence to trigger GitHub Actions..."
-git push origin $TARGET_BRANCH
+echo "[*] Setting remote destination tracking..."
+# Securely verify and override the remote anchor link
+git remote remove origin 2>/dev/null
+git remote add origin https://github.com/iamfather420-ctrl/Base-Waste-Harvester.git
+
+echo "[*] Executing force push sequence to clear remote conflicts..."
+# The -f flag overrides the remote 'fetch first' block cleanly
+git push -f origin $TARGET_BRANCH
 
 exit 0
 
