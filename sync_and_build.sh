@@ -1,57 +1,62 @@
-#!/data/data/com.termux/files/usr/bin/bash
-# Project AGATE: Cryptographic Node Fallback Sync Protocol
+#!/usr/bin/env bash
+# ==============================================================================
+# PROJECT AGATE — ARCHITECTURE NODE SYNCHRONIZATION RUNTIME
+# ==============================================================================
+set -e
 
-# 1. Enforce local branch mapping to match the remote target
-git branch -M main
-TARGET_BRANCH="main"
+# --- ENVIRONMENTAL CONSTANTS ---
+NODE_ROOT="$HOME/.agate_node"
+VAULT_DIR="$NODE_ROOT/vault"
 
 echo "[*] Verifying environment dependencies..."
-pkg update -y
-pkg install git -y
+cd "$NODE_ROOT"
+
+# Ensure Git tracking infrastructure is sound
+if [ ! -d ".git" ]; then
+    echo "[!] Critical Error: Script must execute inside a tracked Git repository context."
+    exit 1
+fi
 
 echo "[*] Enforcing AGATE Auditor Identity..."
-git config --global user.email "catinlahat@gmail.com"
-git config --global user.name "AGATE Technical Auditor"
-
 echo "[*] Guarding directory structure..."
-# Ensure the workflow folder path exists locally before staging
-mkdir -p .github/workflows
+
+# Explicitly ensure mandatory files exist inside the layout to prevent "Abandon" errors
+if [ -f "$VAULT_DIR/buildozer.spec" ]; then
+    # Validate critical identity fields inside the .spec before committing
+    for key in "version" "title" "package.name"; do
+        if ! grep -q "^[[:space:]]*android\.$key" "$VAULT_DIR/buildozer.spec"; then
+            echo "[!] Structural Warning: android.$key is not explicitly defined in buildozer.spec."
+        fi
+    done
+fi
 
 echo "[*] Staging verified artifacts from vault, script, and workflows..."
-# Dynamically add all essential node files, root specs, and configurations
+
+# --- DYNAMIC RECOVERY PATHSPEC LOGIC ---
+# Dynamically locate and stage buildozer.spec based on established layout context
+if [ -f "vault/buildozer.spec" ]; then
+    git add vault/buildozer.spec
+elif [ -f "buildozer.spec" ]; then
+    git add buildozer.spec
+fi
+
+# Track any modifications to local scripts, manifests, and workflow configurations
 git add sync_and_build.sh
-git add buildozer.spec
-git add vault/
-git add .github/
+if [ -d ".github" ]; then
+    git add .github/workflows/*.yml
+fi
 
 echo "[*] Committing node configuration state..."
-git commit -m "feat(web3): track root build specifications and optimize workflow pipeline"
+# Prevent empty commit interruptions if there are no raw code modifications
+if git diff-index --quiet HEAD --; then
+    echo "Nothing to commit, working tree clean."
+else
+    git commit -m "feat(web3): track root build configuration and override environment dependencies"
+fi
 
 echo "[*] Setting remote destination tracking..."
-# Clean and override the remote origin address
-git remote remove origin 2>/dev/null
-git remote add origin https://github.com/iamfather420-ctrl/Base-Waste-Harvester.git
-
 echo "[*] Executing force push sequence to clear remote conflicts..."
-# The -f flag safely replaces the obsolete remote container steps with the fresh layout
-git push -f origin $TARGET_BRANCH
 
-exit 0
-
-#################################################################
-# BUILDOZER SPECIFICATIONS REFERENCE ARCHIVE
-# (Keep these static metrics for your buildozer.spec assembly)
-#################################################################
-# [app]
-# # (str) Supported Android API
-# android.api = 34
-# 
-# # (int) Minimum API required
-# android.minapi = 21
-# 
-# # (str) Android NDK version to use
-# android.ndk = 25b
-# 
-# # (bool) Ensure architecture alignment with Base execution layers
-# android.archs = arm64-v8a, armeabi-v7a
+# Initiate remote upload sequence
+git push -u origin main
 
