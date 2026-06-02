@@ -20,7 +20,7 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ccache git libffi-dev libssl-dev autoconf automake libtool openjdk-17-jdk unzip zip
+        sudo apt-get install -y ccache git libffi-dev libssl-dev autoconf automake libtool libtoolize openjdk-17-jdk unzip zip
         pip install --upgrade pip
         pip install Cython==0.29.33 buildozer
 
