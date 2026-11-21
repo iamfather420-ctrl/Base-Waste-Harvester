@@ -1,21 +1,31 @@
 #!/data/data/com.termux/files/usr/bin/bash
+set -u
 
-# Configuration
 LOG_FILE="$HOME/.agate_node/vault/consensus_memory.json"
 REPORT_FILE="$HOME/.agate_node/vault/forensic_summary.txt"
+PARSER="$(dirname "$0")/parse_audit_log.py"
 
-# Forensic Audit Processing
-TOTAL_ATTEMPTS=$(wc -l < "$LOG_FILE")
-BLOCKED_ATTEMPTS=$(grep -c "FAIL" "$LOG_FILE")
-SUCCESS_ATTEMPTS=$(grep -c "SUCCESS" "$LOG_FILE")
-TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%S)
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "BLOCKED: python3 is required to validate the audit log."
+    exit 2
+fi
+METRICS=$(python3 "$PARSER" "$LOG_FILE") || {
+    echo "AUDIT DATA INVALID OR UNAVAILABLE; refusing to generate a verified report."
+    exit 2
+}
+IFS=$'\t' read -r TOTAL_ATTEMPTS FAILED_ATTEMPTS SUCCESS_ATTEMPTS <<< "$METRICS"
+TIMESTAMP=$(date -Iseconds)
 
-# Header generation (380-character limit constraint)
-echo "--- AGATE FORENSIC AUDIT: $TIMESTAMP ---" > "$REPORT_FILE"
-echo "Status: Sovereign Infrastructure Security Defenses Active." >> "$REPORT_FILE"
-echo "Intrusion Blocks: $BLOCKED_ATTEMPTS / $TOTAL_ATTEMPTS Total Cycles." >> "$REPORT_FILE"
-echo "Heartbeat Validations: $SUCCESS_ATTEMPTS." >> "$REPORT_FILE"
-echo "Security Pillar: Infrastructure/Cybersecurity Verified." >> "$REPORT_FILE"
-echo "--- END LOG ---" >> "$REPORT_FILE"
+{
+    echo "--- AGATE FORENSIC AUDIT: $TIMESTAMP ---"
+    echo "Evidence status: JSONL records validated."
+    echo "Event records: $TOTAL_ATTEMPTS."
+    echo "Recorded failures: $FAILED_ATTEMPTS."
+    echo "Recorded successful responses: $SUCCESS_ATTEMPTS."
+    echo "Security posture: NOT ASSESSED BY THIS LOG."
+    echo "Firewall enforcement: NOT VERIFIED."
+    echo "Note: connection failures are service-availability observations, not proof of intrusion or firewall blocking."
+    echo "--- END LOG ---"
+} > "$REPORT_FILE"
 
 cat "$REPORT_FILE"

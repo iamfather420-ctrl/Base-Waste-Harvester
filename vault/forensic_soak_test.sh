@@ -1,32 +1,45 @@
 #!/data/data/com.termux/files/usr/bin/bash
+set -u
+
 LOG_FILE="$HOME/.agate_node/vault/consensus_memory.json"
-ITERATIONS=50000
+ITERATIONS="${ITERATIONS:-50000}"
 PORT=8888
+mkdir -p "$HOME/.agate_node/vault" || exit 1
+
 cleanup() {
-    echo -e "\nAudit interrupted. Cleaning up..."
-    exec 3>&-
-    termux-wake-unlock
-    exit 0
+    exec 3>&- 2>/dev/null || true
+    termux-wake-unlock >/dev/null 2>&1 || true
 }
-trap cleanup SIGINT
-termux-wake-lock
-echo "Initiating 50,000-cycle forensic soak test..."
-mkdir -p "$HOME/.agate_node/vault"
-exec 3>>"$LOG_FILE"
+trap 'cleanup; exit 130' INT TERM
+trap cleanup EXIT
+
+termux-wake-lock >/dev/null 2>&1 || true
+echo "Initiating $ITERATIONS-cycle service-observation soak test (not an intrusion classifier)..."
+exec 3>>"$LOG_FILE" || exit 1
+
 for ((i=1; i<=ITERATIONS; i++)); do
-    TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%S)
-    RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:$PORT)
-    if [[ "$RESPONSE" == "200" ]]; then
-        echo "{\"timestamp\": \"$TIMESTAMP\", \"id\": $i, \"status\": \"SUCCESS\", \"event\": \"Node Heartbeat Validated\"}" >&3
+    TIMESTAMP=$(date -Iseconds)
+    HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" --connect-timeout 1 --max-time 2 "http://127.0.0.1:$PORT" 2>/dev/null)
+    CURL_EXIT=$?
+
+    if [ "$CURL_EXIT" -eq 0 ] && [ "$HTTP_CODE" = "200" ]; then
+        STATUS="SUCCESS"
+        EVENT="service_http_200"
+    elif [ "$CURL_EXIT" -eq 0 ]; then
+        STATUS="WARNING"
+        EVENT="service_http_non_200"
     else
-        ERROR_DETAIL=$(curl -s -I http://127.0.0.1:$PORT 2>&1 | head -n 1)
-        echo "{\"timestamp\": \"$TIMESTAMP\", \"id\": $i, \"status\": \"FAIL\", \"event\": \"Intrusion/Connection block detected\", \"detail\": \"$ERROR_DETAIL\"}" >&3
+        STATUS="UNAVAILABLE"
+        EVENT="service_connection_unavailable"
     fi
+
+    printf '{"timestamp":"%s","id":%d,"status":"%s","event":"%s","http_code":"%s","curl_exit":%d}\n' \
+        "$TIMESTAMP" "$i" "$STATUS" "$EVENT" "$HTTP_CODE" "$CURL_EXIT" >&3
+
     sleep 0.1
     if (( i % 1000 == 0 )); then
-        echo "Audit Progress: $i / $ITERATIONS cycles complete."
+        echo "Audit Progress: $i / $ITERATIONS observations complete."
     fi
 done
-exec 3>&-
-termux-wake-unlock
-echo "Audit Complete."
+
+echo "Observation run complete. Network failures were recorded as UNAVAILABLE, not as verified intrusions."

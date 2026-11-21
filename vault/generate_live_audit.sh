@@ -1,27 +1,47 @@
 #!/data/data/com.termux/files/usr/bin/bash
+set -u
 
-# Configuration: Source of Truth
 LOG_FILE="$HOME/.agate_node/vault/consensus_memory.json"
 PORT="8888"
 TARGET_IP="127.0.0.1"
+PARSER="$(dirname "$0")/parse_audit_log.py"
 
-# 1. Forensic Cycle Count (Raw Data Fidelity)
-TOTAL_CYCLES=$(wc -l < "$LOG_FILE")
-BLOCK_COUNT=$(grep -c "FAIL" "$LOG_FILE")
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "BLOCKED: python3 is required to validate the audit log."
+    exit 2
+fi
 
-# 2. Heartbeat/Ping Verification (Connectivity)
-# Checks if the local loopback/network is responsive
-PING_STATUS=$(ping -c 1 -W 1 $TARGET_IP > /dev/null 2>&1 && echo "100% HEARTBEAT ACTIVE" || echo "FAIL")
+METRICS=$(python3 "$PARSER" "$LOG_FILE") || {
+    echo "AUDIT DATA INVALID OR UNAVAILABLE; no security verdict generated."
+    exit 2
+}
+IFS=$'\t' read -r TOTAL_CYCLES BLOCK_COUNT SUCCESS_COUNT <<< "$METRICS"
 
-# 3. Port Defense Verification (Port Specific)
-# Probes the port to confirm it is blocked as intended
-PORT_CHECK=$(timeout 1 curl -sI http://$TARGET_IP:$PORT > /dev/null 2>&1 || echo "PORT BLOCKED - DEFENSE VERIFIED")
+if ping -c 1 -W 1 "$TARGET_IP" >/dev/null 2>&1; then
+    PING_STATUS="HEARTBEAT_RESPONDED"
+else
+    PING_STATUS="HEARTBEAT_UNAVAILABLE"
+fi
 
-# 4. Report Assembly
-echo "--- AGATE LIVE AUDIT: $(date) ---"
-echo "TOTAL FORENSIC CYCLES: $TOTAL_CYCLES"
+HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" --connect-timeout 1 --max-time 2 "http://$TARGET_IP:$PORT")
+CURL_EXIT=$?
+if [ "$CURL_EXIT" -eq 0 ]; then
+    PORT_STATUS="SERVICE_REACHABLE_HTTP_$HTTP_CODE"
+else
+    PORT_STATUS="SERVICE_UNREACHABLE_OR_FILTERED_CURL_EXIT_$CURL_EXIT"
+fi
+
+echo "--- AGATE FORENSIC AUDIT: $(date -Iseconds) ---"
+echo "VALIDATED EVENT RECORDS: $TOTAL_CYCLES"
+echo "RECORDED FAILURES: $BLOCK_COUNT"
+echo "RECORDED SUCCESSES: $SUCCESS_COUNT"
 echo "CONNECTION HEARTBEAT: $PING_STATUS"
-echo "PORT $PORT DEFENSE STATUS: $PORT_CHECK"
-echo "CURRENT BLOCK RATE: $(( (BLOCK_COUNT * 100) / TOTAL_CYCLES ))%"
-echo "RAW INTRUSION LOG TAIL (LAST 3):"
+echo "PORT $PORT SERVICE STATUS: $PORT_STATUS"
+echo "FIREWALL POLICY: NOT VERIFIED BY A FAILED CONNECTION"
+if [ "$TOTAL_CYCLES" -gt 0 ]; then
+    echo "RECORDED FAILURE RATE: $(( BLOCK_COUNT * 100 / TOTAL_CYCLES ))%"
+else
+    echo "RECORDED FAILURE RATE: NOT AVAILABLE (zero event records)"
+fi
+echo "RAW EVENT LOG TAIL (LAST 3):"
 tail -n 3 "$LOG_FILE"
