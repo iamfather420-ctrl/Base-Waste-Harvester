@@ -1,0 +1,23 @@
+name: Forensic Audit Script Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: ["fix/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  audit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check shell syntax
+        run: bash -n vault/generate_live_audit.sh vault/forensic_soak_test.sh vault/generate_report.sh
+      - name: Test strict audit parser
+        run: python -m unittest -v test_audit_log.py
