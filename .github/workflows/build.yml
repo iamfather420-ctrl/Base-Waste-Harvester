@@ -22,7 +22,7 @@ jobs:
     - name: Install System Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ccache git libffi-dev libssl-dev autoconf automake libtool libtoolize openjdk-17-jdk unzip zip
+        sudo apt-get install -y ccache git libffi-dev libssl-dev autoconf automake libtool openjdk-17-jdk unzip zip
 
     - name: Install Python Dependencies
       run: |
